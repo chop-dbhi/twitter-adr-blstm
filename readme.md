@@ -39,16 +39,9 @@ Please cite the following if you use these resources in your own work:
 ### TL;DR
 
 #### Contents
-1. Overview
 2. Files & Directories
 3. Data
 4. Code 
-
-#### Overview
-
-- ADR/pharmacovigilance
-- Model high-level overview
-- Keras + Theano
 
 #### Files & Directories
 
