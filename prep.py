@@ -17,7 +17,7 @@ import os, sys
 import csv
 import re
 import optparse
-from utils import twokenize, CMUTweetTagger
+from utils import twokenize
 import numpy as np
 from sklearn.cross_validation import StratifiedShuffleSplit
 
