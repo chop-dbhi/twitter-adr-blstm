@@ -1,0 +1,5 @@
+Download the ASU Twitter ADR Dataset from: 
+
+https://github.com/azinik/ADRMine (link last tested Sep 2016)
+
+...and unpack in this directory. On Linux you can do this by running ./download_orig_datasets.sh from the base directory.

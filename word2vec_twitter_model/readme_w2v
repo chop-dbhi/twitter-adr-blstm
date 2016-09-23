@@ -1,0 +1,8 @@
+Download the word2vec twitter model from:
+
+http://yuca.test.iminds.be:8900/fgodin/downloads/word2vec_twitter_model.tar.gz (link last tested Sep 2016)
+
+...and unpack in this directory. On Linux you can do this by running ./download_orig_datasets.sh from the base directory.
+
+Make sure the W2VEC_TWTR_MODEL_PATH in settings.py points to the correct path
+before running the LSTM.
