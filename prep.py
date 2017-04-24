@@ -155,7 +155,7 @@ if __name__ == '__main__':
     testfiles = opts.testfiles.split(',')
 
     ''' Pre-process sentences in raw directory '''
-    labelset = SETTINGS['labelset']
+    labelset = SETTINGS['LABELSET']
 
     tokset = {'<UNK>'}
     tokset |= create_adr_dataset('train', trainfiles, tokset, labelset)
