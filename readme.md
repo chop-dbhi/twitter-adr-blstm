@@ -1,6 +1,6 @@
 ## Bidirectional LSTM for Labeling Adverse Drug Reactions in Twitter Posts
 
-This repository contains code and data used in the paper:
+This repository contains code and data from the paper:
 
 Anne Cocos, Alexander G. Fiks, and Aaron J. Masino. Deep Learning for Pharmacovigilance: Recurrent Neural Network Architectures for Labeling Adverse Drug Reactions in Twitter Posts. (Under Review)
 
@@ -8,11 +8,13 @@ Please cite the following if you use these resources in your own work:
 
 {citation}
 
+**Note** that the code in this release has been updated from the original version to correspond to new versions of Keras and Theano. As a result, the model is missing a dropout layer which will impact the results. For the original release, see v1.0.
+
 ----
 
 ### Quick Start
 
-1. Ensure your Python environment has all the requirements listed in ./src/requirements.txt, in particular [Theano](http://deeplearning.net/software/theano/install.html) (v0.7.0) and [Keras]() (v0.3.1). We used an [Enthought Canopy Python distribution](https://store.enthought.com/downloads/#default) to cover the rest. 
+1. Ensure your **Python 2.7** environment has all the requirements listed in ./requirements.txt, in particular [Theano](http://deeplearning.net/software/theano/install.html) (v1.0.2) and [Keras]() (v2.2.2). We used an [Enthought Canopy Python distribution](https://store.enthought.com/downloads/#default) to cover the rest. Note this code is not yet updated to work with Python 3.
 
 2. Download the original [Twitter ADR Dataset v1.0](http://diego.asu.edu/Publications/ADRMine.html) and the [word2vec\_twitter\_model](http://www.fredericgodin.com/software/) from the respective dataset authors by running this script:
 
@@ -26,7 +28,7 @@ Please cite the following if you use these resources in your own work:
 	python ./download_tweets.py
 	``
 
-	Note that you will see numerous errors of the type `Error downloading tweet 327323676317974528`. This is because you cannot retrieve tweets by users with deleted or private accounts. It is a violation of the Twitter terms of use to distribute full-text tweets for deleted or private accounts.
+	Note that you will see numerous errors of the type `Error downloading tweet 327323676317974528` (over 780 of these, as of 07-30-2018). This is because you cannot retrieve tweets by users with deleted or private accounts. It is a violation of the Twitter terms of use to distribute full-text tweets for deleted or private accounts.
 
 4. Prepare the dataset (by running `prep.py`), and train, validate, and test the model (with `adr_label.py`). We've provided an example script that will allow you to create a 90/10 train/validation split from within the combined ASU and CHOP training sets, train the BLSTM, and test on the combined ASU and CHOP test sets:
 

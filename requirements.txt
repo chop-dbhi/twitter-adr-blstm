@@ -5,6 +5,6 @@ gensim==0.12.4
 scikit-learn==0.16.1
 beautifulsoup4==4.3.2
 matplotlib==1.4.3
-Theano==0.7.0
-Keras==0.3.1
+Theano==1.0.2
+Keras==2.2.2
 h5py==2.6.0

@@ -18,10 +18,9 @@ import approximateMatch
 import prep
 from matplotlib import pyplot as plt
 
-from keras.models import Graph, model_from_json
-from keras.layers.embeddings import Embedding
-from keras.layers.core import TimeDistributedDense, Activation, Dropout, Masking
-from keras.layers.recurrent import LSTM
+from keras.models import model_from_json, Sequential
+from keras.layers import Bidirectional
+from keras.layers import Embedding, LSTM, TimeDistributed, Dense, Activation
 from keras import callbacks
 from keras.preprocessing import sequence
 
@@ -45,11 +44,11 @@ def vectorize_set(lexlists, maxlen, V):
 def init_embedding_weights(i2w, w2vmodel):
     # Create initial embedding weights matrix
     # Return: np.array with dim [vocabsize, embeddingsize]
-
+    
     d = w2vmodel.syn0norm.shape[1]
     V = len(i2w)
     assert sorted(i2w.keys()) == range(V)  # verify indices are sequential
-
+    
     emb = np.zeros([V,d])
     for i,l in i2w.items():
         if i==0:
@@ -66,9 +65,9 @@ def embed_set(lexlists, toklists, maxlen, w2vModel):
         padded = ['PAD'] * (padlen-len(toklist))
         padded += toklist
         return np.array(padded)
-
+    
     ## TODO: Normalize URLs, digits, etc
-
+    
     dim = w2vModel.syn0norm.shape[1]
     nb_samples = len(lexlists)
     X = np.zeros([nb_samples, maxlen, dim])
@@ -91,12 +90,12 @@ def learning_curve(history, pltname='history.pdf', preddir=None, fileprefix=''):
     '''
     num_epochs = len(history.history['val_loss'])
     n = range(num_epochs)
-
+    
     approxmatch = []
     for i in n:
         f1 = open(os.path.join(preddir, fileprefix+'approxmatch_epoch'+str(i)), 'rU').readlines()[-1].strip().split()[-1]
         approxmatch.append(float(f1))
-
+    
     fig = plt.figure()
     ax = plt.subplot(111)
     ax.plot(n, history.history['loss'], '-b', label='Trn Loss')
@@ -104,7 +103,7 @@ def learning_curve(history, pltname='history.pdf', preddir=None, fileprefix=''):
     ax.plot(n, history.history['val_loss'], '-r', label='Val Loss')
     #ax.plot(n, history.history['val_acc'], '--r', label='Val Acc')
     ax.plot(n, approxmatch, '-g', label='ApproxMatch F1')
-
+    
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width*0.8, box.height])
     ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
@@ -115,18 +114,18 @@ def learning_curve(history, pltname='history.pdf', preddir=None, fileprefix=''):
 
 
 def predict_score(model, x, toks, y, pred_dir, i2l, padlen, metafile=None, fileprefix=''):
-
+    
     ## GRAPH (BIDIRECTIONAL)
     pred_probs = model.predict({'input': x}, verbose=0)['output']
     test_loss = model.evaluate({'input': x, 'output': y}, batch_size=1, verbose=0)
     pred = np.argmax(pred_probs, axis=2)
-
+    
     N = len(toks)
-
+    
     # If the name of a metafile is passed, simply write this round of predictions to file
     if metafile > 0:
         meta = open(metafile, 'a')
-
+    
     fname = os.path.join(pred_dir, fileprefix+'approxmatch_test')
     with open(fname, 'w') as fout:
         for i in range(N):
@@ -134,10 +133,10 @@ def predict_score(model, x, toks, y, pred_dir, i2l, padlen, metafile=None, filep
             fout.write(bos)
             if metafile > 0:
                 meta.write(bos)
-
+            
             sentlen = len(toks[i])
             startind = padlen - sentlen
-
+            
             preds = [i2l[j] for j in pred[i][startind:]]
             actuals = [i2l[j] for j in np.argmax(y[i], axis=1)[startind:]]
             for (w, act, p) in zip(toks[i], actuals, preds):
@@ -145,7 +144,7 @@ def predict_score(model, x, toks, y, pred_dir, i2l, padlen, metafile=None, filep
                 fout.write(line)
                 if metafile > 0:
                     meta.write(line)
-
+            
             eos = 'EOS\tO\tO\n'
             fout.write(eos)
             if metafile > 0:
@@ -154,7 +153,7 @@ def predict_score(model, x, toks, y, pred_dir, i2l, padlen, metafile=None, filep
     scores['loss'] = test_loss
     if metafile > 0:
         meta.close()
-
+    
     with open(fname, 'a') as fout:
         fout.write('\nTEST Approximate Matching Results:\n  ADR: Precision '+ str(scores['p'])+ ' Recall ' + str(scores['r']) + ' F1 ' + str(scores['f1']))
     return scores
@@ -179,58 +178,51 @@ def run_model_varyembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v,
     train_lex = sequence.pad_sequences(train_lex, maxlen=maxlen)
     valid_lex = sequence.pad_sequences(valid_lex, maxlen=maxlen)
     test_lex = sequence.pad_sequences(test_lex, maxlen=maxlen)
-
-    train_y = sequence.pad_sequences(train_y, maxlen=maxlen)
-    valid_y = sequence.pad_sequences(valid_y, maxlen=maxlen)
-    test_y = sequence.pad_sequences(test_y, maxlen=maxlen)
-
-    train_y = vectorize_set(train_y, maxlen, nclasses)
-    valid_y = vectorize_set(valid_y, maxlen, nclasses)
-    test_y = vectorize_set(test_y, maxlen, nclasses)
+    
+	train_y = sequence.pad_sequences(train_y, maxlen=maxlen)
+	valid_y = sequence.pad_sequences(valid_y, maxlen=maxlen)
+	test_y = sequence.pad_sequences(test_y, maxlen=maxlen)
+    
+	train_y = vectorize_set(train_y, maxlen, nclasses)
+	valid_y = vectorize_set(valid_y, maxlen, nclasses)
+	test_y = vectorize_set(test_y, maxlen, nclasses)
 
 
     # Build the model
     ## BI-DIRECTIONAL
     print('Building the model...')
     H = numhidden
-    model = Graph()
-
-    model.add_input(name='input', input_shape=[maxlen], dtype='int')
-
+    model = Sequential()
+    
     # Add embedding layer
     if w2v is None:
-        model.add_node(Embedding(vocsize, embedding_dim, init='lecun_uniform', input_length=maxlen), name='embed', input='input')
+        model.add(Embedding(output_dim=embed_dim, input_dim=vocsize, input_length=maxlen,
+                            embeddings_initializer='lecun_uniform', name='embed', 
+                            trainable=True))
     else:
         embeds = init_embedding_weights(idx2word, w2v)
         embed_dim = w2v.syn0norm.shape[1]
-        model.add_node(Embedding(vocsize, embed_dim, input_length=maxlen, weights=[embeds], mask_zero=True), name='embed', input='input')
+        model.add(Embedding(output_dim=embed_dim, input_dim=vocsize, input_length=maxlen,
+                            weights=[embeds], mask_zero=True, name='embed', trainable=True))
 
-    # Build first hidden layer
-    model.add_node(LSTM(hiddendim, return_sequences=True, activation='tanh'), name='forward0', input='embed')
-    model.add_node(Dropout(0.1), name='dropout0f', input='forward0')
-    model.add_node(LSTM(hiddendim, return_sequences=True, go_backwards=True, activation='tanh'), name='backwards0', input='embed')
-    model.add_node(Dropout(0.1), name='dropout0b', input='backwards0')
-
-    # Build subsequent hidden layers
-    if H > 1:
-        for i in range(1, H):
-            model.add_node(LSTM(hiddendim, return_sequences=True, activation='tanh'), name='forward%d'%i, input='dropout%df'%(i-1))
-            model.add_node(Dropout(0.1), name='dropout%df'%i, input='forward%d'%i)
-            model.add_node(LSTM(hiddendim, return_sequences=True, go_backwards=True, activation='tanh'), name='backwards%d'%i, input='dropout%db'%(i-1))
-            model.add_node(Dropout(0.1), name='dropout%db'%i, input='backwards%d'%i)
-
+    # Build hidden layers
+    for i in range(H):
+        model.add(Bidirectional(LSTM(hiddendim, return_sequences=True, activation='tanh', 
+                                     dropout=0.1, recurrent_dropout=0.1, name='forward%d'%i), 
+                                merge_mode='ave'))
 
     # Finish up the network
-    model.add_node(TimeDistributedDense(nclasses), name='tdd', inputs=['dropout%df'%(H-1),'dropout%db'%(H-1)], merge_mode='ave')
-    model.add_node(Activation('softmax'), name='softmax', input='tdd')
-    model.add_output(name='output', input='softmax')
-    model.compile(optimizer='rmsprop', loss={'output': 'categorical_crossentropy'})
+    model.add(TimeDistributed(Dense(nclasses)))
+    model.add(Activation('softmax'))
+
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
 
     # Set up callbacks
     fileprefix = 'embed_varied_'
     am = approximateMatch.ApproximateMatch_SEQ(valid_toks, valid_y, valid_lex, idx2label,
-                                        pred_dir=os.path.join(basedir, 'predictions'), fileprefix=fileprefix)
+                                               pred_dir=os.path.join(basedir, 'predictions'), 
+                                               fileprefix=fileprefix)
     mc = callbacks.ModelCheckpoint(os.path.join(basedir, 'models', 'embedding.model.weights.{epoch:02d}.hdf5'))
     cbs = [am, mc]
     if validate:
@@ -239,9 +231,9 @@ def run_model_varyembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v,
 
     # Train the model
     print('Training...')
-    hist = model.fit({'input': train_lex, 'output': train_y}, nb_epoch=num_epochs, batch_size=1,
-                     validation_data={'input': valid_lex, 'output': valid_y},
-                     callbacks=cbs)
+    hist = model.fit(train_lex, train_y, epochs=num_epochs, batch_size=1, 
+                     validation_data=(valid_lex, valid_y), callbacks=cbs)
+
     if validate:
         val_f1, best_model = learning_curve(hist, preddir=os.path.join(basedir,'predictions'),
                                             pltname=os.path.join(basedir,'charts','hist_varyembed%d_nhidden%d.pdf'
@@ -305,31 +297,19 @@ def run_model_fixedembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v
     ## BI-DIRECTIONAL
     print('Building the model...')
     H = numhidden
-    model = Graph()
-    model.add_input(name='input', input_shape=(maxlen, embed_dim))
-    model.add_node(Masking(), name='mask', input='input')
-
-    # Build first hidden layer
-    model.add_node(LSTM(hiddendim, return_sequences=True, activation='tanh'), name='forward0', input='mask')
-    model.add_node(Dropout(0.1), name='dropout0f', input='forward0')
-    model.add_node(LSTM(hiddendim, return_sequences=True, go_backwards=True, activation='tanh'), name='backwards0', input='mask')
-    model.add_node(Dropout(0.1), name='dropout0b', input='backwards0')
-
-    # Build subsequent hidden layers
-    if H > 1:
-        for i in range(1, H):
-            model.add_node(LSTM(hiddendim, return_sequences=True, activation='tanh'), name='forward%d'%i, input='dropout%df'%(i-1))
-            model.add_node(Dropout(0.1), name='dropout%df'%i, input='forward%d'%i)
-            model.add_node(LSTM(hiddendim, return_sequences=True, go_backwards=True, activation='tanh'), name='backwards%d'%i, input='dropout%db'%(i-1))
-            model.add_node(Dropout(0.1), name='dropout%db'%i, input='backwards%d'%i)
-
+    model = Sequential()
+    
+    # Build hidden layers
+    for i in range(H):
+        model.add(Bidirectional(LSTM(hiddendim, return_sequences=True, activation='tanh', 
+                                     dropout=0.1, recurrent_dropout=0.1, name='forward%d'%i), 
+                                input_shape=(maxlen, embed_dim), merge_mode='ave'))
 
     # Finish up the network
-    model.add_node(TimeDistributedDense(nclasses), name='tdd', inputs=['dropout%df'%(H-1),'dropout%db'%(H-1)], merge_mode='ave')
-    model.add_node(Activation('softmax'), name='softmax', input='tdd')
-    model.add_output(name='output', input='softmax')
-    model.compile(optimizer='rmsprop', loss={'output': 'categorical_crossentropy'})
+    model.add(TimeDistributed(Dense(nclasses)))
+    model.add(Activation('softmax'))
 
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
     # Set up callbacks
     fileprefix = 'embed_fixed_'
@@ -343,9 +323,8 @@ def run_model_fixedembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v
 
     # Train the model
     print('Training...')
-    hist = model.fit({'input': train_lex, 'output': train_y}, nb_epoch=num_epochs, batch_size=1,
-                     validation_data={'input': valid_lex, 'output': valid_y},
-                     callbacks=cbs)
+    hist = model.fit(train_lex, train_y, epochs=num_epochs, batch_size=1, 
+                     validation_data=(valid_lex, valid_y), callbacks=cbs)
     if validate:
         val_f1, best_model = learning_curve(hist, preddir=os.path.join(basedir, 'predictions'),
                                             pltname=os.path.join(basedir, 'charts', 'hist_fixedembed%d_nhidden%d.pdf'
@@ -435,7 +414,7 @@ if __name__=="__main__":
     train_set, valid_set, test_set, dic = prep.load_adefull(opts.picklefile)
     idx2label = dict((k,v) for v,k in dic['labels2idx'].iteritems())
     idx2word  = dict((k,v) for v,k in dic['words2idx'].iteritems())
-    if 0 in idx2word:
+    if 0 in idx2label:
         sys.stderr.write('Index 0 found in labels2idx: data may be lost because 0 used as padding\n')
     if 0 in idx2word:
         sys.stderr.write('Index 0 found in words2idx: data may be lost because 0 used as padding\n')

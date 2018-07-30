@@ -102,11 +102,8 @@ class ApproximateMatch_SEQ(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
 
-        ## SEQUENTIAL
-        # pred = self.model.predict_classes(self.valid_x)
-
         ## BIDIRECTIONAL
-        pred_probs = self.model.predict({'input': self.valid_x})['output']
+        pred_probs = self.model.predict(self.valid_x)
         pred = np.argmax(pred_probs, axis=2)
 
         N = len(self.valid_toks)
