@@ -6,7 +6,7 @@ Anne Cocos, Alexander G. Fiks, and Aaron J. Masino. Deep Learning for Pharmacovi
 
 Please cite the following if you use these resources in your own work:
 
-'''
+``
 @article{doi:10.1093/jamia/ocw180,
 author = {Cocos, Anne and Fiks, Alexander G and Masino, Aaron J},
 title = {Deep learning for pharmacovigilance: recurrent neural network architectures for labeling adverse drug reactions in Twitter posts},
@@ -19,7 +19,7 @@ doi = {10.1093/jamia/ocw180},
 URL = { + http://dx.doi.org/10.1093/jamia/ocw180},
 eprint = {/oup/backfile/content_public/journal/jamia/24/4/10.1093_jamia_ocw180/1/ocw180.pdf}
 }
-'''
+``
 
 **Note** that the code in this release has been updated from the original version to correspond to new versions of Keras and Theano. As a result, the model is missing a dropout layer which will impact the results. For the original release, see v1.0.
 
