@@ -116,8 +116,8 @@ def learning_curve(history, pltname='history.pdf', preddir=None, fileprefix=''):
 def predict_score(model, x, toks, y, pred_dir, i2l, padlen, metafile=None, fileprefix=''):
     
     ## GRAPH (BIDIRECTIONAL)
-    pred_probs = model.predict({'input': x}, verbose=0)['output']
-    test_loss = model.evaluate({'input': x, 'output': y}, batch_size=1, verbose=0)
+    pred_probs = model.predict(x)
+    test_loss = model.evaluate(x, y, batch_size=1, verbose=0)
     pred = np.argmax(pred_probs, axis=2)
     
     N = len(toks)
@@ -179,15 +179,14 @@ def run_model_varyembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v,
     valid_lex = sequence.pad_sequences(valid_lex, maxlen=maxlen)
     test_lex = sequence.pad_sequences(test_lex, maxlen=maxlen)
     
-	train_y = sequence.pad_sequences(train_y, maxlen=maxlen)
-	valid_y = sequence.pad_sequences(valid_y, maxlen=maxlen)
-	test_y = sequence.pad_sequences(test_y, maxlen=maxlen)
+    train_y = sequence.pad_sequences(train_y, maxlen=maxlen)
+    valid_y = sequence.pad_sequences(valid_y, maxlen=maxlen)
+    test_y = sequence.pad_sequences(test_y, maxlen=maxlen)
+    	
+    train_y = vectorize_set(train_y, maxlen, nclasses)
+    valid_y = vectorize_set(valid_y, maxlen, nclasses)
+    test_y = vectorize_set(test_y, maxlen, nclasses)
     
-	train_y = vectorize_set(train_y, maxlen, nclasses)
-	valid_y = vectorize_set(valid_y, maxlen, nclasses)
-	test_y = vectorize_set(test_y, maxlen, nclasses)
-
-
     # Build the model
     ## BI-DIRECTIONAL
     print('Building the model...')
@@ -252,6 +251,7 @@ def run_model_varyembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v,
     if validate:
         model = model_from_json(open(os.path.join(basedir,'models','embedding_model_architecture.json')).read())
         model.load_weights(bestmodelfile)
+        model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
 
     scores = predict_score(model, test_lex, test_toks, test_y, os.path.join(basedir,'predictions'), idx2label,
@@ -343,6 +343,7 @@ def run_model_fixedembed(dataset, numhidden, hiddendim, idx2word, idx2label, w2v
     if validate:
         model = model_from_json(open(os.path.join(basedir,'models','embedfixed_model_architecture.json')).read())
         model.load_weights(bestmodelfile)
+        model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
     scores = predict_score(model, test_lex, test_toks, test_y, os.path.join(basedir, 'predictions'), idx2label,
                             maxlen, fileprefix=fileprefix)
